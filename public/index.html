@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bedrock Bot Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Bedrock Bot Admin</h1>
+      <p>Consola de control multi-cuenta para envíos programados</p>
+    </header>
+
+    <!-- Sección de Cuentas -->
+    <section class="panel">
+      <h2>🔌 Cuentas de WhatsApp Conectadas</h2>
+      <div class="accounts-toolbar">
+        <button type="button" id="btn-add-account" class="btn btn-secondary">+ Agregar campana</button>
+      </div>
+      <div id="accounts-container" class="accounts-grid">
+        <p style="color: var(--text-secondary)">Cargando cuentas...</p>
+      </div>
+    </section>
+
+    <!-- Editor de Mensajes -->
+    <section class="panel">
+      <h2>📝 Configuración del Mensaje</h2>
+      <div class="account-tabs" id="account-tabs-container">
+        <!-- Pestañas de cuentas cargadas dinámicamente -->
+      </div>
+      <form id="config-form">
+        <div class="form-group">
+          <label for="labelName">Nombre de la Lista / Etiqueta</label>
+          <input type="text" id="labelName" required placeholder="Ej: Bedrock Access">
+        </div>
+        
+        <div class="form-group">
+          <label for="messageLimit">Límite de Envíos por Tanda (0 = Sin límite)</label>
+          <input type="number" id="messageLimit" min="0" value="0" placeholder="Ej: 50">
+        </div>
+        
+        <div class="form-group" style="flex-direction: row; align-items: center; gap: 0.75rem; margin-top: 0.5rem; margin-bottom: 1.5rem;">
+          <input type="checkbox" id="avoidIfLastMessageIsFromMe" style="width: 20px; height: 20px; accent-color: var(--accent-color); cursor: pointer; margin: 0; background: transparent; border: none; box-shadow: none;">
+          <label for="avoidIfLastMessageIsFromMe" style="cursor: pointer; text-transform: none; font-size: 0.95rem; font-weight: 600; color: var(--text-primary); margin: 0; display: inline-block; vertical-align: middle;">
+            🚫 Evitar enviar si el último mensaje del chat es mío
+          </label>
+        </div>
+        
+        <div class="form-group">
+          <label>Mensajes <span style="font-weight:normal;font-size:0.85em;opacity:0.8;">(si pones varios, a cada contacto le llega UNO al azar — ayuda a evitar el baneo)</span></label>
+          <div id="messages-container"></div>
+          <button type="button" id="btn-add-message" style="margin-top:0.5rem; padding:0.5rem 0.9rem; border-radius:8px; border:1px dashed var(--text-secondary); background:transparent; color:var(--text-secondary); cursor:pointer; font-weight:600;">➕ Agregar otro mensaje</button>
+        </div>
+
+        <div class="form-group">
+          <label>Imagen Adjunta (Opcional)</label>
+          <div style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.5rem;">
+            <div class="file-input-wrapper">
+              <button type="button" class="btn-file">
+                📁 Seleccionar Imagen
+                <input type="file" id="mediaFile" accept="image/*">
+              </button>
+            </div>
+            <button type="button" id="btn-delete-image" class="btn-danger-outline" style="display: none;">🗑️ Quitar Imagen</button>
+          </div>
+          <div id="image-preview" class="image-preview-container">
+            <span class="no-image">No hay ninguna imagen seleccionada (se enviará solo texto)</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Documento PDF Adjunto (Opcional)</label>
+          <div style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.5rem;">
+            <div class="file-input-wrapper">
+              <button type="button" class="btn-file">
+                📄 Seleccionar PDF
+                <input type="file" id="pdfFile" accept="application/pdf">
+              </button>
+            </div>
+            <button type="button" id="btn-delete-pdf" class="btn-danger-outline" style="display: none;">🗑️ Quitar PDF</button>
+          </div>
+          <div id="pdf-preview" class="image-preview-container">
+            <span class="no-pdf" style="color: var(--text-secondary); font-size: 0.85rem;">No hay ningún documento PDF seleccionado</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Nota de Voz Adjunta (Opcional)</label>
+          <div style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.5rem;">
+            <div class="file-input-wrapper">
+              <button type="button" class="btn-file">
+                🎙️ Seleccionar Audio
+                <input type="file" id="voiceFile" accept="audio/*">
+              </button>
+            </div>
+            <button type="button" id="btn-delete-voice" class="btn-danger-outline" style="display: none;">🗑️ Quitar Nota de Voz</button>
+          </div>
+          <div id="voice-preview" class="voice-preview-container">
+            <span class="no-voice" style="color: var(--text-secondary); font-size: 0.85rem;">No hay ninguna nota de voz seleccionada</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Video Adjunto (Opcional)</label>
+          <div style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.5rem;">
+            <div class="file-input-wrapper">
+              <button type="button" class="btn-file">
+                🎬 Seleccionar Video
+                <input type="file" id="videoFile" accept="video/mp4,video/*">
+              </button>
+            </div>
+            <button type="button" id="btn-delete-video" class="btn-danger-outline" style="display: none;">🗑️ Quitar Video</button>
+          </div>
+          <div id="video-preview" class="image-preview-container">
+            <span class="no-video" style="color: var(--text-secondary); font-size: 0.85rem;">No hay ningún video seleccionado (máx. 16 MB, ideal formato MP4)</span>
+          </div>
+        </div>
+
+        <div class="actions-row" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+          <button type="submit" class="btn">💾 Guardar Configuración</button>
+          <button type="button" id="btn-verificar" class="btn btn-secondary">Verificar Etiqueta</button>
+          <button type="button" id="btn-enviar" class="btn btn-secondary">🚀 Enviar Mensaje Ahora</button>
+          <button type="button" id="btn-pausar" class="btn btn-warning" style="display: none; padding: 0.75rem 1.5rem;">⏸️ Pausar Envío</button>
+          <button type="button" id="btn-reanudar" class="btn btn-success" style="display: none; padding: 0.75rem 1.5rem;">▶️ Continuar Envío</button>
+          <button type="button" id="btn-detener" class="btn btn-danger" style="display: none; padding: 0.75rem 1.5rem; animation: blink-red 1.5s infinite;">🚨 PARO DE EMERGENCIA</button>
+          <button type="button" id="btn-apagar" class="btn btn-danger-outline" style="padding: 0.75rem 1.5rem; margin-left: auto;">🔌 Apagar Servidor</button>
+        </div>
+        <div class="form-group" style="flex-direction: row; align-items: center; gap: 0.75rem; margin-top: 0.75rem;">
+          <input type="checkbox" id="verifyCheckHistory" style="width: 18px; height: 18px; accent-color: var(--accent-color); cursor: pointer; margin: 0;">
+          <label for="verifyCheckHistory" style="cursor: pointer; text-transform: none; font-size: 0.9rem; font-weight: 600; color: var(--text-primary); margin: 0;">
+            Revisar duplicados e historial (mÃ¡s lento)
+          </label>
+        </div>
+        <div id="verify-result" class="verify-result" style="display: none;"></div>
+      </form>
+    </section>
+
+    <!-- Logs de Actividad -->
+    <section class="panel">
+      <h2>📋 Registro de Actividad (Logs)</h2>
+      <div id="logs" class="console-logs">
+        <div class="log-entry">[Sistema] Consola iniciada. Cargando registros...</div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    let imageFile = null;
+    let imageChanged = false;
+    let pdfFile = null;
+    let pdfChanged = false;
+    let voiceFile = null;
+    let voiceChanged = false;
+    let videoFile = null;
+    let videoChanged = false;
+    let currentAccountId = "cuenta_1";
+    let tabsRendered = false;
+
+    function escapeHtml(value) {
+      return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // --- Mensajes en secciones separadas (uno al azar por contacto) ---
+    function renumberMessages() {
+      const labels = document.querySelectorAll('#messages-container .message-row-label');
+      labels.forEach((l, i) => { l.textContent = labels.length > 1 ? ('Mensaje ' + (i + 1)) : 'Mensaje'; });
+    }
+
+    function addMessageRow(text = '') {
+      const cont = document.getElementById('messages-container');
+      const row = document.createElement('div');
+      row.className = 'message-row';
+      row.style.cssText = 'margin-bottom:0.6rem; border:1px solid rgba(255,255,255,0.14); border-radius:8px; padding:0.6rem;';
+
+      const head = document.createElement('div');
+      head.style.cssText = 'display:flex; justify-content:space-between; align-items:center; margin-bottom:0.35rem;';
+      const lbl = document.createElement('span');
+      lbl.className = 'message-row-label';
+      lbl.style.cssText = 'font-size:0.85rem; font-weight:700; color:var(--text-secondary);';
+      const del = document.createElement('button');
+      del.type = 'button';
+      del.textContent = '🗑️ Quitar';
+      del.className = 'btn-danger-outline';
+      del.style.cssText = 'font-size:0.75rem; padding:0.2rem 0.55rem;';
+      del.addEventListener('click', () => {
+        const rows = cont.querySelectorAll('.message-row');
+        if (rows.length <= 1) { ta.value = ''; return; } // siempre dejar al menos una caja
+        row.remove();
+        renumberMessages();
+      });
+      head.appendChild(lbl);
+      head.appendChild(del);
+
+      const ta = document.createElement('textarea');
+      ta.className = 'message-variant';
+      ta.placeholder = 'Escribe aquí este mensaje...';
+      ta.style.cssText = 'width:100%; min-height:90px;';
+      ta.value = text || '';
+
+      row.appendChild(head);
+      row.appendChild(ta);
+      cont.appendChild(row);
+      renumberMessages();
+    }
+
+    function renderMessages(variants) {
+      const cont = document.getElementById('messages-container');
+      cont.innerHTML = '';
+      const list = (Array.isArray(variants) && variants.length > 0) ? variants : [''];
+      list.forEach(t => addMessageRow(t));
+    }
+
+    function collectMessages() {
+      return Array.from(document.querySelectorAll('#messages-container .message-variant'))
+        .map(ta => ta.value)
+        .filter(v => v.trim().length > 0);
+    }
+
+    // Cargar configuraciones iniciales de una cuenta específica
+    async function loadConfig(accountId = currentAccountId) {
+      currentAccountId = accountId;
+      
+      // Actualizar estado activo de las pestañas
+      document.querySelectorAll('.account-tab').forEach(tab => {
+        if (tab.getAttribute('data-id') === accountId) {
+          tab.classList.add('active');
+        } else {
+          tab.classList.remove('active');
+        }
+      });
+
+      try {
+        const res = await fetch(`/api/config?accountId=${accountId}`);
+        const data = await res.json();
+        document.getElementById('labelName').value = data.labelName || '';
+        renderMessages((data.messageVariants && data.messageVariants.length) ? data.messageVariants : [data.messageText || '']);
+        document.getElementById('messageLimit').value = data.messageLimit !== undefined ? data.messageLimit : 0;
+        document.getElementById('avoidIfLastMessageIsFromMe').checked = data.avoidIfLastMessageIsFromMe || false;
+        
+        // Reset file selections
+        imageFile = null;
+        imageChanged = false;
+        pdfFile = null;
+        pdfChanged = false;
+        voiceFile = null;
+        voiceChanged = false;
+        videoFile = null;
+        videoChanged = false;
+        document.getElementById('mediaFile').value = '';
+        document.getElementById('pdfFile').value = '';
+        document.getElementById('voiceFile').value = '';
+        document.getElementById('videoFile').value = '';
+
+        if (data.hasImage) {
+          document.getElementById('image-preview').innerHTML = `<img src="/api/image?accountId=${accountId}&t=${Date.now()}" alt="Vista previa">`;
+          document.getElementById('btn-delete-image').style.display = 'block';
+        } else {
+          document.getElementById('image-preview').innerHTML = `<span class="no-image">No hay ninguna imagen seleccionada (se enviará solo texto)</span>`;
+          document.getElementById('btn-delete-image').style.display = 'none';
+        }
+
+        if (data.hasPdf) {
+          document.getElementById('pdf-preview').innerHTML = `
+            <div style="display: flex; align-items: center; gap: 0.5rem; color: #10b981; font-weight: 600;">
+              <span>📄 documento_${accountId}.pdf (Guardado y Activo)</span>
+            </div>
+          `;
+          document.getElementById('btn-delete-pdf').style.display = 'block';
+        } else {
+          document.getElementById('pdf-preview').innerHTML = `<span class="no-pdf" style="color: var(--text-secondary); font-size: 0.85rem;">No hay ningún documento PDF seleccionado</span>`;
+          document.getElementById('btn-delete-pdf').style.display = 'none';
+        }
+
+        if (data.hasVoiceNote) {
+          document.getElementById('voice-preview').innerHTML = `
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem; width: 100%;">
+              <span style="color: #10b981; font-weight: 600;">🎙️ Nota de voz_${accountId}.ogg (Guardada y Activa)</span>
+              <audio controls src="/api/voice?accountId=${accountId}&t=${Date.now()}"></audio>
+            </div>
+          `;
+          document.getElementById('btn-delete-voice').style.display = 'block';
+        } else {
+          document.getElementById('voice-preview').innerHTML = `<span class="no-voice" style="color: var(--text-secondary); font-size: 0.85rem;">No hay ninguna nota de voz seleccionada</span>`;
+          document.getElementById('btn-delete-voice').style.display = 'none';
+        }
+
+        if (data.hasVideo) {
+          document.getElementById('video-preview').innerHTML = `
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem; width: 100%;">
+              <span style="color: #10b981; font-weight: 600;">🎬 Video (Guardado y Activo)</span>
+              <video controls style="max-width: 100%; max-height: 240px; border-radius: 8px;" src="/api/video?accountId=${accountId}&t=${Date.now()}"></video>
+            </div>
+          `;
+          document.getElementById('btn-delete-video').style.display = 'block';
+        } else {
+          document.getElementById('video-preview').innerHTML = `<span class="no-video" style="color: var(--text-secondary); font-size: 0.85rem;">No hay ningún video seleccionado (máx. 16 MB, ideal formato MP4)</span>`;
+          document.getElementById('btn-delete-video').style.display = 'none';
+        }
+      } catch (err) {
+        console.error('Error al cargar configuración:', err);
+      }
+    }
+
+    // Escuchar selección de archivo de imagen
+    document.getElementById('mediaFile').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      if (file.size > 20 * 1024 * 1024) {
+        alert('La imagen seleccionada es demasiado grande (' + (file.size / 1024 / 1024).toFixed(1) + ' MB). El límite de seguridad es de 20 MB.');
+        this.value = '';
+        return;
+      }
+
+      imageFile = file;
+      imageChanged = true;
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        document.getElementById('image-preview').innerHTML = `<img src="${evt.target.result}" alt="Vista previa">`;
+        document.getElementById('btn-delete-image').style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // Quitar la imagen cargada
+    document.getElementById('btn-delete-image').addEventListener('click', function() {
+      imageFile = null;
+      imageChanged = true;
+      document.getElementById('mediaFile').value = '';
+      document.getElementById('image-preview').innerHTML = `<span class="no-image">No hay ninguna imagen seleccionada (se enviará solo texto)</span>`;
+      this.style.display = 'none';
+    });
+
+    // Escuchar selección de archivo PDF
+    document.getElementById('pdfFile').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      if (file.size > 20 * 1024 * 1024) {
+        alert('El archivo PDF seleccionado es demasiado grande (' + (file.size / 1024 / 1024).toFixed(1) + ' MB). El límite de seguridad es de 20 MB.');
+        this.value = '';
+        return;
+      }
+
+      pdfFile = file;
+      pdfChanged = true;
+      document.getElementById('pdf-preview').innerHTML = `
+        <div style="display: flex; align-items: center; gap: 0.5rem; color: #10b981; font-weight: 600;">
+          <span>📄 ${file.name} (Listo para guardar)</span>
+        </div>
+      `;
+      document.getElementById('btn-delete-pdf').style.display = 'block';
+    });
+
+    // Quitar el PDF cargado
+    document.getElementById('btn-delete-pdf').addEventListener('click', function() {
+      pdfFile = null;
+      pdfChanged = true;
+      document.getElementById('pdfFile').value = '';
+      document.getElementById('pdf-preview').innerHTML = `<span class="no-pdf" style="color: var(--text-secondary); font-size: 0.85rem;">No hay ningún documento PDF seleccionado</span>`;
+      this.style.display = 'none';
+    });
+
+    // Escuchar selección de archivo de audio (nota de voz)
+    document.getElementById('voiceFile').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      if (file.size > 20 * 1024 * 1024) {
+        alert('El archivo de audio seleccionado es demasiado grande (' + (file.size / 1024 / 1024).toFixed(1) + ' MB). El límite de seguridad es de 20 MB.');
+        this.value = '';
+        return;
+      }
+
+      voiceFile = file;
+      voiceChanged = true;
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        document.getElementById('voice-preview').innerHTML = `
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem; width: 100%;">
+            <span style="color: #10b981; font-weight: 600;">🎙️ ${file.name} (Listo para guardar)</span>
+            <audio controls src="${evt.target.result}"></audio>
+          </div>
+        `;
+        document.getElementById('btn-delete-voice').style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // Quitar la nota de voz cargada
+    document.getElementById('btn-delete-voice').addEventListener('click', function() {
+      voiceFile = null;
+      voiceChanged = true;
+      document.getElementById('voiceFile').value = '';
+      document.getElementById('voice-preview').innerHTML = `<span class="no-voice" style="color: var(--text-secondary); font-size: 0.85rem;">No hay ninguna nota de voz seleccionada</span>`;
+      this.style.display = 'none';
+    });
+
+    // Escuchar selección de archivo de video
+    document.getElementById('videoFile').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      if (file.size > 16 * 1024 * 1024) {
+        alert('El video seleccionado es demasiado grande (' + (file.size / 1024 / 1024).toFixed(1) + ' MB). El límite de WhatsApp para videos es de 16 MB.');
+        this.value = '';
+        return;
+      }
+
+      videoFile = file;
+      videoChanged = true;
+
+      // Vista previa local del video usando un object URL (no carga todo en memoria como base64)
+      const objectUrl = URL.createObjectURL(file);
+      document.getElementById('video-preview').innerHTML = `
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem; width: 100%;">
+          <span style="color: #10b981; font-weight: 600;">🎬 ${file.name} (Listo para guardar)</span>
+          <video controls style="max-width: 100%; max-height: 240px; border-radius: 8px;" src="${objectUrl}"></video>
+        </div>
+      `;
+      document.getElementById('btn-delete-video').style.display = 'block';
+    });
+
+    // Quitar el video cargado
+    document.getElementById('btn-delete-video').addEventListener('click', function() {
+      videoFile = null;
+      videoChanged = true;
+      document.getElementById('videoFile').value = '';
+      document.getElementById('video-preview').innerHTML = `<span class="no-video" style="color: var(--text-secondary); font-size: 0.85rem;">No hay ningún video seleccionado (máx. 16 MB, ideal formato MP4)</span>`;
+      this.style.display = 'none';
+    });
+
+    // Renderizar las pestañas de selección de cuentas
+    function renderTabs(accounts) {
+      const tabsContainer = document.getElementById('account-tabs-container');
+      tabsContainer.innerHTML = '';
+      accounts.forEach(acc => {
+        const tab = document.createElement('button');
+        tab.type = 'button';
+        tab.className = `account-tab ${acc.id === currentAccountId ? 'active' : ''}`;
+        tab.setAttribute('data-id', acc.id);
+        tab.textContent = `⚙️ Configurar ${acc.name.toUpperCase()}`;
+        tab.addEventListener('click', () => {
+          loadConfig(acc.id);
+        });
+        tabsContainer.appendChild(tab);
+      });
+      tabsRendered = true;
+    }
+
+    // Actualizar estado de las cuentas en tiempo real
+    async function updateAccountStatuses() {
+      try {
+        const res = await fetch('/api/status');
+        const data = await res.json();
+        
+        // Renderizar las pestañas
+        if (data.accounts && data.accounts.length > 0) {
+          if (!data.accounts.some(acc => acc.id === currentAccountId)) {
+            currentAccountId = data.accounts[0].id;
+          }
+          renderTabs(data.accounts);
+        }
+
+        // Mostrar/ocultar botones de envío según estado
+        const stopBtn = document.getElementById('btn-detener');
+        const sendBtn = document.getElementById('btn-enviar');
+        const pauseBtn = document.getElementById('btn-pausar');
+        const resumeBtn = document.getElementById('btn-reanudar');
+        
+        if (data.isSending) {
+          stopBtn.style.display = 'block';
+          sendBtn.disabled = true;
+          
+          if (data.isPaused) {
+            sendBtn.textContent = '⏸️ Envío Pausado';
+            pauseBtn.style.display = 'none';
+            resumeBtn.style.display = 'block';
+          } else {
+            sendBtn.textContent = '⏳ Enviando...';
+            pauseBtn.style.display = 'block';
+            resumeBtn.style.display = 'none';
+          }
+        } else {
+          stopBtn.style.display = 'none';
+          pauseBtn.style.display = 'none';
+          resumeBtn.style.display = 'none';
+          sendBtn.disabled = false;
+          sendBtn.textContent = '🚀 Enviar Mensaje Ahora';
+        }
+
+        const container = document.getElementById('accounts-container');
+        container.innerHTML = '';
+
+        data.accounts.forEach(acc => {
+          const card = document.createElement('div');
+          card.className = 'account-card';
+
+          let statusClass = 'desconectado';
+          let statusText = 'Desconectado';
+          if (acc.status === 'READY') {
+            statusClass = 'conectado';
+            statusText = 'Listo';
+          } else if (acc.status === 'QR') {
+            statusClass = 'esperando-qr';
+            statusText = 'Esperando QR';
+          } else if (acc.status === 'DESACTIVADO') {
+            statusClass = 'desactivado';
+            statusText = 'Desactivado';
+          }
+
+          let qrContent = '';
+          if (acc.status === 'QR' && acc.qr) {
+            qrContent = `
+              <div class="qr-container">
+                <img src="${acc.qr}" alt="Código QR">
+                <p style="color: #0f172a; font-size: 0.75rem; font-weight: 600; margin-top: 0.5rem;">Escanea este código con WhatsApp Business</p>
+              </div>
+            `;
+          } else if (acc.status === 'DESACTIVADO') {
+            qrContent = `
+              <div style="text-align: center; color: var(--text-secondary); font-size: 0.9rem; margin: 2.5rem 0;">
+                Activa el envio para iniciar el QR de esta campana.
+              </div>
+            `;
+          } else if (acc.status === 'READY') {
+            qrContent = `
+              <div style="text-align: center; color: var(--success-color); font-size: 1.5rem; margin: 2rem 0;">
+                ✓ Vinculado
+              </div>
+            `;
+          } else {
+            qrContent = `
+              <div style="text-align: center; color: var(--text-secondary); font-size: 0.9rem; margin: 2.5rem 0;">
+                Iniciando navegador...
+              </div>
+            `;
+          }
+
+          card.innerHTML = `
+            <div class="account-header">
+              <span class="account-name" style="display: flex; align-items: center; gap: 0.35rem;">
+                <span class="name-text">${escapeHtml(acc.name)}</span>
+                <button type="button" class="btn-rename" data-account-id="${acc.id}" data-current-name="${acc.name}" style="background: transparent; border: none; cursor: pointer; padding: 0.15rem; font-size: 0.85rem; display: inline-flex; align-items: center;" title="Renombrar cuenta">✏️</button>
+              </span>
+              <span class="status-badge ${statusClass}">${statusText}</span>
+            </div>
+            <div class="account-toggle-container" style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-top: 1px dashed rgba(255,255,255,0.08); margin-top: -0.25rem;">
+              <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-secondary);">Enviar mensajes</span>
+              <label class="switch">
+                <input type="checkbox" class="account-toggle-input" data-account-id="${acc.id}" ${acc.enabled ? 'checked' : ''}>
+                <span class="slider round"></span>
+              </label>
+            </div>
+            ${qrContent}
+            <div class="account-actions" style="margin-top: 0.5rem; text-align: center; border-top: 1px dashed rgba(255,255,255,0.08); padding-top: 0.5rem;">
+              <button type="button" class="btn-unlink-account btn-danger-outline" data-account-id="${acc.id}" style="width: 100%; padding: 0.4rem; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; gap: 0.35rem;">
+                🔌 Desvincular Celular
+              </button>
+            </div>
+          `;
+          container.appendChild(card);
+        });
+      } catch (err) {
+        console.error('Error al obtener estados:', err);
+      }
+    }
+
+    // Obtener logs del backend
+    async function updateLogs() {
+      try {
+        const res = await fetch('/api/logs');
+        const data = await res.json();
+        const logsDiv = document.getElementById('logs');
+        logsDiv.innerHTML = '';
+        data.logs.forEach(line => {
+          const entry = document.createElement('div');
+          entry.className = 'log-entry';
+          entry.textContent = line;
+          logsDiv.appendChild(entry);
+        });
+        logsDiv.scrollTop = logsDiv.scrollHeight;
+      } catch (err) {
+        console.error('Error al leer logs:', err);
+      }
+    }
+
+    // Guardar configuración de la cuenta activa
+    document.getElementById('config-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const labelName = document.getElementById('labelName').value;
+      const messages = collectMessages();
+      if (messages.length === 0) {
+        alert('Escribe al menos un mensaje.');
+        return;
+      }
+      const messageLimit = document.getElementById('messageLimit').value;
+      const avoidIfLastMessageIsFromMe = document.getElementById('avoidIfLastMessageIsFromMe').checked;
+
+      const formData = new FormData();
+      formData.append('accountId', currentAccountId);
+      formData.append('labelName', labelName);
+      formData.append('messageVariants', JSON.stringify(messages));
+      formData.append('messageLimit', messageLimit);
+      formData.append('avoidIfLastMessageIsFromMe', avoidIfLastMessageIsFromMe);
+
+      if (imageChanged) {
+        formData.append('imageChanged', 'true');
+        if (imageFile) {
+          formData.append('image', imageFile);
+        }
+      }
+
+      if (pdfChanged) {
+        formData.append('pdfChanged', 'true');
+        if (pdfFile) {
+          formData.append('pdf', pdfFile);
+        }
+      }
+
+      if (voiceChanged) {
+        formData.append('voiceNoteChanged', 'true');
+        if (voiceFile) {
+          formData.append('voiceNote', voiceFile);
+        }
+      }
+
+      if (videoChanged) {
+        formData.append('videoChanged', 'true');
+        if (videoFile) {
+          formData.append('video', videoFile);
+        }
+      }
+
+      try {
+        const res = await fetch('/api/config', {
+          method: 'POST',
+          body: formData
+        });
+        if (res.ok) {
+          alert('Configuración guardada con éxito.');
+          imageChanged = false;
+          pdfChanged = false;
+          voiceChanged = false;
+          videoChanged = false;
+          imageFile = null;
+          pdfFile = null;
+          voiceFile = null;
+          videoFile = null;
+          loadConfig(currentAccountId);
+        } else {
+          alert('Error al guardar la configuración.');
+        }
+      } catch (err) {
+        console.error('Error al guardar:', err);
+      }
+    });
+
+    // Gatillar envío manual
+    document.getElementById('btn-verificar').addEventListener('click', async () => {
+      const resultBox = document.getElementById('verify-result');
+      const labelName = document.getElementById('labelName').value.trim();
+      const messages = collectMessages();
+      const messageLimit = document.getElementById('messageLimit').value;
+      const avoidIfLastMessageIsFromMe = document.getElementById('avoidIfLastMessageIsFromMe').checked;
+      const checkHistory = document.getElementById('verifyCheckHistory').checked;
+
+      if (!labelName) {
+        alert('Escribe el nombre de la etiqueta que quieres verificar.');
+        return;
+      }
+
+      resultBox.style.display = 'block';
+      resultBox.innerHTML = 'Verificando etiqueta...';
+
+      try {
+        const res = await fetch('/api/verify-label', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            accountId: currentAccountId,
+            labelName,
+            messageVariants: messages,
+            messageLimit,
+            avoidIfLastMessageIsFromMe,
+            checkHistory
+          })
+        });
+        const data = await res.json();
+
+        if (!res.ok || !data.success) {
+          const available = Array.isArray(data.availableLabels) && data.availableLabels.length
+            ? `<div style="margin-top:0.75rem;color:var(--text-secondary);">Etiquetas disponibles: ${data.availableLabels.join(', ')}</div>`
+            : '';
+          resultBox.innerHTML = `<strong>No se pudo verificar.</strong><br>${data.error || 'Error desconocido.'}${available}`;
+          return;
+        }
+
+        const possibleNames = data.samplePossible.length
+          ? `<div><strong>Primeros posibles:</strong> ${data.samplePossible.join(', ')}</div>`
+          : '';
+        const skippedNames = data.sampleSkipped.length
+          ? `<div style="margin-top:0.5rem;color:var(--text-secondary);"><strong>Saltados de muestra:</strong> ${data.sampleSkipped.map(item => `${item.name} (${item.reason})`).join(', ')}</div>`
+          : '';
+        const modeNote = data.checkedHistory
+          ? ''
+          : '<div style="margin-top:0.5rem;color:var(--text-secondary);">Conteo rapido: no se revisaron duplicados ni historial.</div>';
+        const matchedLabels = Array.isArray(data.matchedLabels) && data.matchedLabels.length > 1
+          ? `<div style="margin-top:0.5rem;color:var(--text-secondary);"><strong>Etiquetas combinadas:</strong> ${data.matchedLabels.map(label => `${label.name} (${label.count})`).join(', ')}</div>`
+          : '';
+
+        resultBox.innerHTML = `
+          <div><strong>${data.label}</strong> en ${data.accountName}</div>
+          <div class="verify-grid">
+            <div class="verify-stat"><span>Total en etiqueta</span><strong>${data.totalChats}</strong></div>
+            <div class="verify-stat"><span>Posibles a mandar</span><strong>${data.possibleToSend}</strong></div>
+            <div class="verify-stat"><span>Ya recibieron mensaje</span><strong>${data.alreadySent}</strong></div>
+            <div class="verify-stat"><span>Saltados por ultimo mio</span><strong>${data.skippedLastFromMe}</strong></div>
+            <div class="verify-stat"><span>Errores de historial</span><strong>${data.historyErrors}</strong></div>
+            <div class="verify-stat"><span>Tandas estimadas</span><strong>${data.estimatedBatches}</strong></div>
+          </div>
+          ${modeNote}
+          ${matchedLabels}
+          ${possibleNames}
+          ${skippedNames}
+        `;
+      } catch (err) {
+        resultBox.innerHTML = `<strong>Error al verificar.</strong><br>${err.message}`;
+      }
+    });
+
+    document.getElementById('btn-enviar').addEventListener('click', async () => {
+      if (confirm('¿Estás seguro de que quieres enviar el mensaje a todos los contactos de la lista ahora mismo?')) {
+        try {
+          const res = await fetch('/api/send-now', { method: 'POST' });
+          if (res.ok) {
+            alert('Proceso de envío manual iniciado. Sigue el progreso en la sección de logs.');
+          } else {
+            alert('Error al iniciar el envío manual.');
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      }
+    });
+
+    // Gatillar detención del envío
+    document.getElementById('btn-detener').addEventListener('click', async () => {
+      if (confirm('¿Estás seguro de que quieres DETENER el proceso de envío actual?')) {
+        try {
+          const res = await fetch('/api/stop-sending', { method: 'POST' });
+          if (res.ok) {
+            alert('Petición de detención enviada. El bot se detendrá tras finalizar el mensaje actual.');
+          } else {
+            alert('Error al intentar detener el envío.');
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      }
+    });
+
+    // Gatillar pausar envío
+    document.getElementById('btn-pausar').addEventListener('click', async () => {
+      try {
+        const res = await fetch('/api/pause-sending', { method: 'POST' });
+        if (!res.ok) {
+          alert('Error al pausar el envío.');
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    });
+
+    // Gatillar reanudar envío
+    document.getElementById('btn-reanudar').addEventListener('click', async () => {
+      try {
+        const res = await fetch('/api/resume-sending', { method: 'POST' });
+        if (!res.ok) {
+          alert('Error al reanudar el envío.');
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    });
+
+    // Manejar el toggle de activar/desactivar envíos por cuenta
+    document.getElementById('btn-add-account').addEventListener('click', async () => {
+      const name = prompt('Nombre para la nueva campana:', 'campana nueva');
+      if (!name || !name.trim()) return;
+
+      try {
+        const res = await fetch('/api/accounts/add', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: name.trim() })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          alert(data.error || 'No se pudo crear la campana.');
+          return;
+        }
+
+        currentAccountId = data.account.id;
+        tabsRendered = false;
+        await updateAccountStatuses();
+        await loadConfig(data.account.id);
+        alert('Campana creada. Espera el QR y escanealo con el nuevo numero.');
+      } catch (err) {
+        console.error('Error al crear campana:', err);
+        alert('Error al crear la campana.');
+      }
+    });
+
+    document.getElementById('accounts-container').addEventListener('change', async (e) => {
+      if (e.target.classList.contains('account-toggle-input')) {
+        const accountId = e.target.getAttribute('data-account-id');
+        const enabled = e.target.checked;
+        
+        e.target.disabled = true;
+        try {
+          const res = await fetch('/api/accounts/toggle', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ id: accountId, enabled })
+          });
+          if (!res.ok) {
+            e.target.checked = !enabled;
+            alert('Error al actualizar el estado de la cuenta.');
+          }
+        } catch (err) {
+          console.error('Error al togglear cuenta:', err);
+          e.target.checked = !enabled;
+        } finally {
+          e.target.disabled = false;
+        }
+      }
+    });
+
+    // Manejar clics en botones de renombrar y desvincular
+    document.getElementById('accounts-container').addEventListener('click', async (e) => {
+      // 1. Renombrar cuenta
+      const renameBtn = e.target.closest('.btn-rename');
+      if (renameBtn) {
+        const accountId = renameBtn.getAttribute('data-account-id');
+        const currentName = renameBtn.getAttribute('data-current-name');
+        const newName = prompt('Ingresa el nuevo nombre para la cuenta:', currentName);
+        if (newName && newName.trim() && newName.trim() !== currentName) {
+          try {
+            const res = await fetch('/api/accounts/rename', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id: accountId, name: newName.trim() })
+            });
+            if (res.ok) {
+              tabsRendered = false; // Forzar re-renderizado de pestañas
+              updateAccountStatuses();
+            } else {
+              alert('Error al renombrar la cuenta.');
+            }
+          } catch (err) {
+            console.error(err);
+          }
+        }
+      }
+
+      // 2. Desvincular cuenta
+      const unlinkBtn = e.target.closest('.btn-unlink-account');
+      if (unlinkBtn) {
+        const accountId = unlinkBtn.getAttribute('data-account-id');
+        if (confirm('¿Estás seguro de que deseas DESVINCULAR esta cuenta? Se cerrará la sesión actual en el bot y tendrás que escanear un nuevo código QR.')) {
+          unlinkBtn.disabled = true;
+          unlinkBtn.textContent = '⏳ Desvinculando...';
+          try {
+            const res = await fetch('/api/accounts/unlink', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id: accountId })
+            });
+            if (res.ok) {
+              updateAccountStatuses();
+            } else {
+              alert('Error al desvincular la cuenta.');
+              unlinkBtn.disabled = false;
+              unlinkBtn.innerHTML = '🔌 Desvincular Celular';
+            }
+          } catch (err) {
+            console.error(err);
+            unlinkBtn.disabled = false;
+            unlinkBtn.innerHTML = '🔌 Desvincular Celular';
+          }
+        }
+      }
+    });
+
+    // Apagar el servidor
+    document.getElementById('btn-apagar').addEventListener('click', async () => {
+      if (confirm('¿Estás seguro de que deseas APAGAR el bot y cerrar el servidor? El bot dejará de funcionar hasta que lo vuelvas a iniciar manualmente.')) {
+        try {
+          const res = await fetch('/api/shutdown', { method: 'POST' });
+          if (res.ok) {
+            alert('El servidor se está apagando. Puedes cerrar esta pestaña.');
+          } else {
+            alert('Error al apagar el servidor.');
+          }
+        } catch (err) {
+          console.error(err);
+          alert('Conexión perdida. El servidor se ha apagado.');
+        }
+      }
+    });
+
+    // Botón para agregar otra caja de mensaje
+    document.getElementById('btn-add-message').addEventListener('click', () => addMessageRow(''));
+
+    // Iniciar bucles de sincronización
+    loadConfig();
+    updateAccountStatuses();
+    updateLogs();
+    setInterval(updateAccountStatuses, 3000);
+    setInterval(updateLogs, 2500);
+  </script>
+</body>
+</html>

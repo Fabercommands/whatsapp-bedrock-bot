@@ -1,0 +1,37 @@
+{
+  "cronSchedule": "45 12 */2 * *",
+  "accounts": [
+    {
+      "id": "cuenta_1",
+      "name": "bandido",
+      "enabled": false,
+      "labelName": "Posible Cliente",
+      "messageText": "Regístrate en nuestra tienda y recibe el 20% de descuento para tu primera compra. 🌐👇🏽\nwww.bandidojewelrymx.app \n\nÚnete al grupo de referencias ⭐️ \nhttps://chat.whatsapp.com/GLMp7gDjCcBHWphcj4JT46?mode=gi_t",
+      "hasImage": false,
+      "hasPdf": false,
+      "hasVoiceNote": true,
+      "messageLimit": 67,
+      "avoidIfLastMessageIsFromMe": false,
+      "hasVideo": false,
+      "messageVariants": [
+        "Regístrate en nuestra tienda y recibe el 20% de descuento para tu primera compra. 🌐👇🏽\nwww.bandidojewelrymx.app \n\nÚnete al grupo de referencias ⭐️ \nhttps://chat.whatsapp.com/GLMp7gDjCcBHWphcj4JT46?mode=gi_t"
+      ]
+    },
+    {
+      "id": "cuenta_2",
+      "name": "bedrock",
+      "enabled": true,
+      "labelName": "PEDIDO POR SITIO WEB",
+      "messageText": "¿Cómo estás? Quería darte la bienvenida personalmente a Bedrock. Tu perfil ya está verificado y ahora formas parte de nuestra comunidad privada.\n\nTe comparto el menú en PDF para que lo revises con calma. Y cuando hagas tu primera compra, queremos recibirte con 3gr de bienvenida. 🎁\n\nSi tienes alguna duda o algo te interesa, escríbeme por aquí. Me dará gusto atenderte personalmente.",
+      "hasImage": false,
+      "hasPdf": true,
+      "hasVoiceNote": false,
+      "messageLimit": 46,
+      "avoidIfLastMessageIsFromMe": false,
+      "hasVideo": false,
+      "messageVariants": [
+        "¿Cómo estás? Quería darte la bienvenida personalmente a Bedrock. Tu perfil ya está verificado y ahora formas parte de nuestra comunidad privada.\n\nTe comparto el menú en PDF para que lo revises con calma. Y cuando hagas tu primera compra, queremos recibirte con 3gr de bienvenida. 🎁\n\nSi tienes alguna duda o algo te interesa, escríbeme por aquí. Me dará gusto atenderte personalmente."
+      ]
+    }
+  ]
+}

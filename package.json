@@ -1,0 +1,27 @@
+{
+  "name": "whatsapp-bedrock-bot",
+  "version": "1.0.0",
+  "description": "WhatsApp bot to send scheduled messages to customers labeled Bedrock Access",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "postinstall": "node scripts/parchar-whatsapp-web.js"
+  },
+  "keywords": [
+    "whatsapp",
+    "bot",
+    "scheduler",
+    "cron"
+  ],
+  "author": "Antigravity",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^5.2.1",
+    "multer": "^2.1.1",
+    "node-cron": "^3.0.3",
+    "qrcode": "^1.5.3",
+    "qrcode-terminal": "^0.12.0",
+    "whatsapp-web.js": "github:pedroslopez/whatsapp-web.js#main"
+  }
+}

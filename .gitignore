@@ -1,0 +1,26 @@
+# Dependencias: se reinstalan con npm ci
+node_modules/
+
+# Sesiones de WhatsApp: dan acceso completo a las cuentas. Nunca al repo;
+# en cada computadora se vuelve a escanear el QR.
+.wwebjs_auth/
+.wwebjs_cache/
+
+.env
+*.log
+
+# Datos de clientes (numeros de telefono) que el bot exporta
+numeros_*.txt
+contactos_rescatados.txt
+reporte_*.pdf
+reporte_*.xlsx
+
+# Respaldos locales
+*.bak-*
+
+# Material del negocio (menu, notas de voz, imagenes): el repo es publico.
+# Se suben desde la pagina del bot en cada computadora.
+documento_*.pdf
+media_voice_*
+media_image_*
+Bedrock.pdf

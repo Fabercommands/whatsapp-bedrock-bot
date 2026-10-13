@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bedrock Bot Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Bedrock Bot Admin</h1>
+      <p>Consola de control multi-cuenta para envíos programados</p>
+    </header>
+
+    <!-- Sección de Cuentas -->
+    <section class="panel">
+      <h2>🔌 Cuentas de WhatsApp Conectadas</h2>
+      <div id="accounts-container" class="accounts-grid">
+        <p style="color: var(--text-secondary)">Cargando cuentas...</p>
+      </div>
+    </section>
+
+    <!-- Editor de Mensajes -->
+    <section class="panel">
+      <h2>📝 Configuración del Mensaje</h2>
+      <form id="config-form">
+        <div class="form-group">
+          <label for="accountSelect">Cuenta que estás configurando</label>
+          <select id="accountSelect" style="width:100%; padding:0.6rem; border-radius:8px;"></select>
+        </div>
+
+        <div class="form-group">
+          <label for="labelName">Nombre de la Lista / Etiqueta</label>
+          <input type="text" id="labelName" required placeholder="Ej: Bedrock Access">
+        </div>
+        
+        <div class="form-group">
+          <label for="messageLimit">Límite de Envíos por Tanda (0 = Sin límite)</label>
+          <input type="number" id="messageLimit" min="0" value="0" placeholder="Ej: 50">
+        </div>
+        
+        <div class="form-group">
+          <label for="messageText">Contenido del Mensaje <span style="font-weight:normal;font-size:0.85em;opacity:0.8;">(para enviar 1 de varios al azar, separa cada versión con una línea que solo tenga <code>===</code>)</span></label>
+          <textarea id="messageText" required placeholder="Escribe el mensaje aquí...&#10;&#10;Puedes poner varias versiones y se manda una al azar:&#10;&#10;Hola, te recordamos la promo de hoy 🌐 bedrockmx.app&#10;===&#10;Buen día! Aprovecha la promo flash de hoy: bedrockmx.app&#10;===&#10;Hey! Solo por hoy tenemos promo, escríbenos si te interesa."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>Imagen Adjunta (Opcional)</label>
+          <div style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.5rem;">
+            <div class="file-input-wrapper">
+              <button type="button" class="btn-file">
+                📁 Seleccionar Imagen
+                <input type="file" id="mediaFile" accept="image/*">
+              </button>
+            </div>
+            <button type="button" id="btn-delete-image" class="btn-danger-outline" style="display: none;">🗑️ Quitar Imagen</button>
+          </div>
+          <div id="image-preview" class="image-preview-container">
+            <span class="no-image">No hay ninguna imagen seleccionada (se enviará solo texto)</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Documento PDF Adjunto (Opcional)</label>
+          <div style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.5rem;">
+            <div class="file-input-wrapper">
+              <button type="button" class="btn-file">
+                📄 Seleccionar PDF
+                <input type="file" id="pdfFile" accept="application/pdf">
+              </button>
+            </div>
+            <button type="button" id="btn-delete-pdf" class="btn-danger-outline" style="display: none;">🗑️ Quitar PDF</button>
+          </div>
+          <div id="pdf-preview" class="image-preview-container">
+            <span class="no-pdf" style="color: var(--text-secondary); font-size: 0.85rem;">No hay ningún documento PDF seleccionado</span>
+          </div>
+        </div>
+
+        <div class="actions-row" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+          <button type="submit" class="btn">💾 Guardar Configuración</button>
+          <button type="button" id="btn-enviar" class="btn btn-secondary">🚀 Enviar Mensaje Ahora</button>
+          <button type="button" id="btn-pausar" class="btn btn-warning" style="display: none; padding: 0.75rem 1.5rem;">⏸️ Pausar Envío</button>
+          <button type="button" id="btn-reanudar" class="btn btn-success" style="display: none; padding: 0.75rem 1.5rem;">▶️ Continuar Envío</button>
+          <button type="button" id="btn-detener" class="btn btn-danger" style="display: none; padding: 0.75rem 1.5rem; animation: blink-red 1.5s infinite;">🚨 PARO DE EMERGENCIA</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- Logs de Actividad -->
+    <section class="panel">
+      <h2>📋 Registro de Actividad (Logs)</h2>
+      <div id="logs" class="console-logs">
+        <div class="log-entry">[Sistema] Consola iniciada. Cargando registros...</div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    let imageFile = null;
+    let imageChanged = false;
+    let pdfFile = null;
+    let pdfChanged = false;
+
+    // Cargar configuraciones iniciales
+    // Llenar el selector de cuentas y cargar la config de la elegida.
+    async function populateAccountSelect() {
+      try {
+        const res = await fetch('/api/status');
+        const data = await res.json();
+        const sel = document.getElementById('accountSelect');
+        const prev = sel.value;
+        sel.innerHTML = '';
+        data.accounts.forEach(acc => {
+          const opt = document.createElement('option');
+          opt.value = acc.id;
+          opt.textContent = acc.name + (acc.enabled ? '' : ' (desactivada)');
+          sel.appendChild(opt);
+        });
+        if (prev && data.accounts.some(a => a.id === prev)) {
+          sel.value = prev;
+        } else {
+          const firstEnabled = data.accounts.find(a => a.enabled);
+          sel.value = firstEnabled ? firstEnabled.id : (data.accounts[0] ? data.accounts[0].id : '');
+        }
+        loadConfig();
+      } catch (err) {
+        console.error('Error al poblar selector de cuentas:', err);
+      }
+    }
+
+    async function loadConfig() {
+      try {
+        const accountId = document.getElementById('accountSelect').value;
+        const res = await fetch('/api/config' + (accountId ? '?accountId=' + encodeURIComponent(accountId) : ''));
+        const data = await res.json();
+        document.getElementById('labelName').value = data.labelName;
+        document.getElementById('messageText').value = data.messageText;
+        document.getElementById('messageLimit').value = data.messageLimit !== undefined ? data.messageLimit : 0;
+        
+        if (data.hasImage) {
+          document.getElementById('image-preview').innerHTML = `<img src="/api/image?accountId=${encodeURIComponent(accountId)}&t=${Date.now()}" alt="Vista previa">`;
+          document.getElementById('btn-delete-image').style.display = 'block';
+        } else {
+          document.getElementById('image-preview').innerHTML = `<span class="no-image">No hay ninguna imagen seleccionada (se enviará solo texto)</span>`;
+          document.getElementById('btn-delete-image').style.display = 'none';
+        }
+
+        if (data.hasPdf) {
+          document.getElementById('pdf-preview').innerHTML = `
+            <div style="display: flex; align-items: center; gap: 0.5rem; color: #10b981; font-weight: 600;">
+              <span>📄 documento.pdf (Guardado y Activo)</span>
+            </div>
+          `;
+          document.getElementById('btn-delete-pdf').style.display = 'block';
+        } else {
+          document.getElementById('pdf-preview').innerHTML = `<span class="no-pdf" style="color: var(--text-secondary); font-size: 0.85rem;">No hay ningún documento PDF seleccionado</span>`;
+          document.getElementById('btn-delete-pdf').style.display = 'none';
+        }
+      } catch (err) {
+        console.error('Error al cargar configuración:', err);
+      }
+    }
+
+    // Escuchar selección de archivo de imagen
+    document.getElementById('mediaFile').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      if (file.size > 20 * 1024 * 1024) {
+        alert('La imagen seleccionada es demasiado grande (' + (file.size / 1024 / 1024).toFixed(1) + ' MB). El límite de seguridad es de 20 MB.');
+        this.value = '';
+        return;
+      }
+
+      imageFile = file;
+      imageChanged = true;
+
+      // Cargar vista previa local para la imagen (suele ser pequeña, por lo que es seguro)
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        document.getElementById('image-preview').innerHTML = `<img src="${evt.target.result}" alt="Vista previa">`;
+        document.getElementById('btn-delete-image').style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // Quitar la imagen cargada
+    document.getElementById('btn-delete-image').addEventListener('click', function() {
+      imageFile = null;
+      imageChanged = true;
+      document.getElementById('mediaFile').value = '';
+      document.getElementById('image-preview').innerHTML = `<span class="no-image">No hay ninguna imagen seleccionada (se enviará solo texto)</span>`;
+      this.style.display = 'none';
+    });
+
+    // Escuchar selección de archivo PDF (NO usamos FileReader para evitar caídas de memoria con PDFs grandes)
+    document.getElementById('pdfFile').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      if (file.size > 20 * 1024 * 1024) {
+        alert('El archivo PDF seleccionado es demasiado grande (' + (file.size / 1024 / 1024).toFixed(1) + ' MB). El límite de seguridad es de 20 MB para prevenir caídas del navegador.');
+        this.value = '';
+        return;
+      }
+
+      pdfFile = file;
+      pdfChanged = true;
+      document.getElementById('pdf-preview').innerHTML = `
+        <div style="display: flex; align-items: center; gap: 0.5rem; color: #10b981; font-weight: 600;">
+          <span>📄 ${file.name} (Listo para guardar)</span>
+        </div>
+      `;
+      document.getElementById('btn-delete-pdf').style.display = 'block';
+    });
+
+    // Quitar el PDF cargado
+    document.getElementById('btn-delete-pdf').addEventListener('click', function() {
+      pdfFile = null;
+      pdfChanged = true;
+      document.getElementById('pdfFile').value = '';
+      document.getElementById('pdf-preview').innerHTML = `<span class="no-pdf" style="color: var(--text-secondary); font-size: 0.85rem;">No hay ningún documento PDF seleccionado</span>`;
+      this.style.display = 'none';
+    });
+
+    // Actualizar estado de las cuentas en tiempo real
+    async function updateAccountStatuses() {
+      try {
+        const res = await fetch('/api/status');
+        const data = await res.json();
+        
+        // Mostrar/ocultar botones de envío según estado
+        const stopBtn = document.getElementById('btn-detener');
+        const sendBtn = document.getElementById('btn-enviar');
+        const pauseBtn = document.getElementById('btn-pausar');
+        const resumeBtn = document.getElementById('btn-reanudar');
+        
+        if (data.isSending) {
+          stopBtn.style.display = 'block';
+          sendBtn.disabled = true;
+          
+          if (data.isPaused) {
+            sendBtn.textContent = '⏸️ Envío Pausado';
+            pauseBtn.style.display = 'none';
+            resumeBtn.style.display = 'block';
+          } else {
+            sendBtn.textContent = '⏳ Enviando...';
+            pauseBtn.style.display = 'block';
+            resumeBtn.style.display = 'none';
+          }
+        } else {
+          stopBtn.style.display = 'none';
+          pauseBtn.style.display = 'none';
+          resumeBtn.style.display = 'none';
+          sendBtn.disabled = false;
+          sendBtn.textContent = '🚀 Enviar Mensaje Ahora';
+        }
+
+        const container = document.getElementById('accounts-container');
+        container.innerHTML = '';
+
+        data.accounts.forEach(acc => {
+          const card = document.createElement('div');
+          card.className = 'account-card';
+
+          let statusClass = 'desconectado';
+          let statusText = 'Desconectado';
+          if (acc.status === 'READY') {
+            statusClass = 'conectado';
+            statusText = 'Listo';
+          } else if (acc.status === 'QR') {
+            statusClass = 'esperando-qr';
+            statusText = 'Esperando QR';
+          }
+
+          let qrContent = '';
+          if (acc.status === 'QR' && acc.qr) {
+            qrContent = `
+              <div class="qr-container">
+                <img src="${acc.qr}" alt="Código QR">
+                <p style="color: #0f172a; font-size: 0.75rem; font-weight: 600; margin-top: 0.5rem;">Escanea este código con WhatsApp Business</p>
+              </div>
+            `;
+          } else if (acc.status === 'READY') {
+            qrContent = `
+              <div style="text-align: center; color: var(--success-color); font-size: 1.5rem; margin: 2rem 0;">
+                ✓ Vinculado
+              </div>
+            `;
+          } else {
+            qrContent = `
+              <div style="text-align: center; color: var(--text-secondary); font-size: 0.9rem; margin: 2.5rem 0;">
+                Iniciando navegador...
+              </div>
+            `;
+          }
+
+          card.innerHTML = `
+            <div class="account-header">
+              <span class="account-name" style="display: flex; align-items: center; gap: 0.35rem;">
+                <span class="name-text">${acc.name}</span>
+                <button type="button" class="btn-rename" data-account-id="${acc.id}" data-current-name="${acc.name}" style="background: transparent; border: none; cursor: pointer; padding: 0.15rem; font-size: 0.85rem; display: inline-flex; align-items: center;" title="Renombrar cuenta">✏️</button>
+              </span>
+              <span class="status-badge ${statusClass}">${statusText}</span>
+            </div>
+            <div class="account-toggle-container" style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-top: 1px dashed rgba(255,255,255,0.08); margin-top: -0.25rem;">
+              <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-secondary);">Enviar mensajes</span>
+              <label class="switch">
+                <input type="checkbox" class="account-toggle-input" data-account-id="${acc.id}" ${acc.enabled ? 'checked' : ''}>
+                <span class="slider round"></span>
+              </label>
+            </div>
+            ${qrContent}
+            <div class="account-actions" style="margin-top: 0.5rem; text-align: center; border-top: 1px dashed rgba(255,255,255,0.08); padding-top: 0.5rem;">
+              <button type="button" class="btn-unlink-account btn-danger-outline" data-account-id="${acc.id}" style="width: 100%; padding: 0.4rem; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; gap: 0.35rem;">
+                🔌 Desvincular Celular
+              </button>
+            </div>
+          `;
+          container.appendChild(card);
+        });
+      } catch (err) {
+        console.error('Error al obtener estados:', err);
+      }
+    }
+
+    // Obtener logs del backend
+    async function updateLogs() {
+      try {
+        const res = await fetch('/api/logs');
+        const data = await res.json();
+        const logsDiv = document.getElementById('logs');
+        logsDiv.innerHTML = '';
+        data.logs.forEach(line => {
+          const entry = document.createElement('div');
+          entry.className = 'log-entry';
+          entry.textContent = line;
+          logsDiv.appendChild(entry);
+        });
+        logsDiv.scrollTop = logsDiv.scrollHeight;
+      } catch (err) {
+        console.error('Error al leer logs:', err);
+      }
+    }
+
+    // Guardar configuración
+    document.getElementById('config-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const labelName = document.getElementById('labelName').value;
+      const messageText = document.getElementById('messageText').value;
+      const messageLimit = document.getElementById('messageLimit').value;
+
+      const formData = new FormData();
+      formData.append('accountId', document.getElementById('accountSelect').value);
+      formData.append('labelName', labelName);
+      formData.append('messageText', messageText);
+      formData.append('messageLimit', messageLimit);
+
+      if (imageChanged) {
+        formData.append('imageChanged', 'true');
+        if (imageFile) {
+          formData.append('image', imageFile);
+        }
+      }
+
+      if (pdfChanged) {
+        formData.append('pdfChanged', 'true');
+        if (pdfFile) {
+          formData.append('pdf', pdfFile);
+        }
+      }
+
+      try {
+        const res = await fetch('/api/config', {
+          method: 'POST',
+          body: formData
+        });
+        if (res.ok) {
+          alert('Configuración guardada con éxito.');
+          imageChanged = false;
+          pdfChanged = false;
+          imageFile = null;
+          pdfFile = null;
+          loadConfig();
+        } else {
+          alert('Error al guardar la configuración.');
+        }
+      } catch (err) {
+        console.error('Error al guardar:', err);
+      }
+    });
+
+    // Gatillar envío manual
+    document.getElementById('btn-enviar').addEventListener('click', async () => {
+      if (confirm('¿Estás seguro de que quieres enviar el mensaje a todos los contactos de la lista ahora mismo?')) {
+        try {
+          const res = await fetch('/api/send-now', { method: 'POST' });
+          if (res.ok) {
+            alert('Proceso de envío manual iniciado. Sigue el progreso en la sección de logs.');
+          } else {
+            alert('Error al iniciar el envío manual.');
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      }
+    });
+
+    // Gatillar detención del envío
+    document.getElementById('btn-detener').addEventListener('click', async () => {
+      if (confirm('¿Estás seguro de que quieres DETENER el proceso de envío actual?')) {
+        try {
+          const res = await fetch('/api/stop-sending', { method: 'POST' });
+          if (res.ok) {
+            alert('Petición de detención enviada. El bot se detendrá tras finalizar el mensaje actual.');
+          } else {
+            alert('Error al intentar detener el envío.');
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      }
+    });
+
+    // Gatillar pausar envío
+    document.getElementById('btn-pausar').addEventListener('click', async () => {
+      try {
+        const res = await fetch('/api/pause-sending', { method: 'POST' });
+        if (!res.ok) {
+          alert('Error al pausar el envío.');
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    });
+
+    // Gatillar reanudar envío
+    document.getElementById('btn-reanudar').addEventListener('click', async () => {
+      try {
+        const res = await fetch('/api/resume-sending', { method: 'POST' });
+        if (!res.ok) {
+          alert('Error al reanudar el envío.');
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    });
+
+    // Manejar el toggle de activar/desactivar envíos por cuenta
+    document.getElementById('accounts-container').addEventListener('change', async (e) => {
+      if (e.target.classList.contains('account-toggle-input')) {
+        const accountId = e.target.getAttribute('data-account-id');
+        const enabled = e.target.checked;
+        
+        e.target.disabled = true;
+        try {
+          const res = await fetch('/api/accounts/toggle', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ id: accountId, enabled })
+          });
+          if (!res.ok) {
+            e.target.checked = !enabled;
+            alert('Error al actualizar el estado de la cuenta.');
+          }
+        } catch (err) {
+          console.error('Error al togglear cuenta:', err);
+          e.target.checked = !enabled;
+        } finally {
+          e.target.disabled = false;
+        }
+      }
+    });
+
+    // Manejar clics en botones de renombrar y desvincular
+    document.getElementById('accounts-container').addEventListener('click', async (e) => {
+      // 1. Renombrar cuenta
+      const renameBtn = e.target.closest('.btn-rename');
+      if (renameBtn) {
+        const accountId = renameBtn.getAttribute('data-account-id');
+        const currentName = renameBtn.getAttribute('data-current-name');
+        const newName = prompt('Ingresa el nuevo nombre para la cuenta:', currentName);
+        if (newName && newName.trim() && newName.trim() !== currentName) {
+          try {
+            const res = await fetch('/api/accounts/rename', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id: accountId, name: newName.trim() })
+            });
+            if (res.ok) {
+              updateAccountStatuses();
+            } else {
+              alert('Error al renombrar la cuenta.');
+            }
+          } catch (err) {
+            console.error(err);
+          }
+        }
+      }
+
+      // 2. Desvincular cuenta
+      const unlinkBtn = e.target.closest('.btn-unlink-account');
+      if (unlinkBtn) {
+        const accountId = unlinkBtn.getAttribute('data-account-id');
+        if (confirm('¿Estás seguro de que deseas DESVINCULAR esta cuenta? Se cerrará la sesión actual en el bot y tendrás que escanear un nuevo código QR.')) {
+          unlinkBtn.disabled = true;
+          unlinkBtn.textContent = '⏳ Desvinculando...';
+          try {
+            const res = await fetch('/api/accounts/unlink', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id: accountId })
+            });
+            if (res.ok) {
+              updateAccountStatuses();
+            } else {
+              alert('Error al desvincular la cuenta.');
+              unlinkBtn.disabled = false;
+              unlinkBtn.innerHTML = '🔌 Desvincular Celular';
+            }
+          } catch (err) {
+            console.error(err);
+            unlinkBtn.disabled = false;
+            unlinkBtn.innerHTML = '🔌 Desvincular Celular';
+          }
+        }
+      }
+    });
+
+    // Al cambiar de cuenta en el selector, recargar su configuración.
+    document.getElementById('accountSelect').addEventListener('change', loadConfig);
+
+    // Iniciar bucles de sincronización
+    populateAccountSelect();
+    updateAccountStatuses();
+    updateLogs();
+    setInterval(updateAccountStatuses, 3000);
+    setInterval(updateLogs, 2500);
+  </script>
+</body>
+</html>
