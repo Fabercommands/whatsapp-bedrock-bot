@@ -10,6 +10,25 @@ página local en `http://localhost:3001`.
 
 ---
 
+## Instalación rápida (sin IA, sin Git)
+
+1. En esta página: botón verde **Code** → **Download ZIP**.
+2. Descomprime el ZIP donde quieras (por ejemplo en Descargas).
+3. Doble clic en **`IniciarBot.bat`**.
+   - Si la PC no tiene Node.js, el `.bat` descarga el instalador y lo abre: dale
+     Siguiente hasta terminar. Si al final te pide cerrar la ventana, ciérrala y
+     vuelve a darle doble clic a `IniciarBot.bat`.
+   - La primera vez tarda unos minutos instalando. Se abre sola la página
+     `http://localhost:3001`.
+4. **Antes de escanear el QR**, en la cuenta **bedrock**: "Documento PDF
+   Adjunto" → **📄 Seleccionar PDF** → elegir el menú → **💾 Guardar
+   Configuración**. ([Por qué va primero](#5-subir-el-pdf-del-menú-antes-del-qr))
+5. Escanea el QR con el **celular que tiene el WhatsApp Business de Bedrock**:
+   WhatsApp → Dispositivos vinculados → Vincular un dispositivo.
+6. Listo cuando la cuenta dice **Listo**.
+
+---
+
 ## Instalación en una computadora nueva (instrucciones para la IA)
 
 > **Para el usuario:** abre Claude Code (u otra IA con terminal) en cualquier
@@ -114,8 +133,9 @@ misma razón.
 
 ### 6. Vincular WhatsApp
 
-Cada cuenta activa muestra un código QR. **El usuario** lo escanea con su
-teléfono: WhatsApp → Dispositivos vinculados → Vincular un dispositivo. Una
+Cada cuenta activa muestra un código QR. **El usuario** lo escanea con el
+**celular que tiene el WhatsApp Business de esa cuenta**, no con su WhatsApp
+personal: WhatsApp → Dispositivos vinculados → Vincular un dispositivo. Una
 cuenta por QR. Tú no puedes hacer este paso.
 
 Está listo cuando cada cuenta activa dice **Listo** en la página. Las cuentas
